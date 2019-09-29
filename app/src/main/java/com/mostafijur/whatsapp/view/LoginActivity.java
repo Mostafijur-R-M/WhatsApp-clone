@@ -29,8 +29,8 @@ public class LoginActivity extends AppCompatActivity {
     private ProgressDialog loadingBar;
 
     private Button LoginButton, PhoneLoginButton;
-    private EditText UserEmail, UserPassword;
-    private TextView NeedNewAccountLink, ForgetPasswordLink;
+   /* private EditText UserEmail, UserPassword;
+    private TextView NeedNewAccountLink, ForgetPasswordLink;*/
 
     private DatabaseReference UsersRef;
 
@@ -46,22 +46,22 @@ public class LoginActivity extends AppCompatActivity {
         InitializeFields();
 
 
-        NeedNewAccountLink.setOnClickListener(new View.OnClickListener() {
+        /*NeedNewAccountLink.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view)
             {
                 SendUserToRegisterActivity();
             }
-        });
+        });*/
 
 
-        LoginButton.setOnClickListener(new View.OnClickListener() {
+        /*LoginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view)
             {
                 AllowUserToLogin();
             }
-        });
+        });*/
 
         PhoneLoginButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -90,7 +90,7 @@ public class LoginActivity extends AppCompatActivity {
 
 
 
-    private void AllowUserToLogin()
+    /*private void AllowUserToLogin()
     {
         String email = UserEmail.getText().toString();
         String password = UserPassword.getText().toString();
@@ -144,18 +144,19 @@ public class LoginActivity extends AppCompatActivity {
                         }
                     });
         }
-    }
+    }*/
 
 
 
     private void InitializeFields()
     {
-        LoginButton = (Button) findViewById(R.id.login_button);
+        /*LoginButton = (Button) findViewById(R.id.login_button);
         PhoneLoginButton = (Button) findViewById(R.id.phone_login_button);
         UserEmail = (EditText) findViewById(R.id.login_email);
         UserPassword = (EditText) findViewById(R.id.login_password);
         NeedNewAccountLink = (TextView) findViewById(R.id.need_new_account_link);
-        ForgetPasswordLink = (TextView) findViewById(R.id.forget_password_link);
+        ForgetPasswordLink = (TextView) findViewById(R.id.forget_password_link);*/
+        PhoneLoginButton = findViewById(R.id.phone_login_button);
         loadingBar = new ProgressDialog(this);
     }
 
