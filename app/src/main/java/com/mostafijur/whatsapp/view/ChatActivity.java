@@ -2,13 +2,17 @@ package com.mostafijur.whatsapp.view;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Message;
 import android.text.TextUtils;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
@@ -50,7 +54,7 @@ public class ChatActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private DatabaseReference RootRef;
 
-    private ImageButton SendMessageButton, SendFilesButton;
+    private ImageButton SendMessageButton, SendTaskButton;
     private EditText MessageInputText;
 
     private final List<Messages> messagesList = new ArrayList<>();
@@ -89,13 +93,32 @@ public class ChatActivity extends AppCompatActivity {
                 SendMessage();
             }
         });
-
-
+        SendTaskButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SendTask();
+            }
+        });
+        MessageInputText.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                (keyCode == KeyEvent.KEYCODE_ENTER)){
+                    Toast.makeText(ChatActivity.this, ""+MessageInputText.getText(), Toast.LENGTH_SHORT).show();
+                    SendMessage();
+                }
+                return false;
+            }
+        });
         DisplayLastSeen();
     }
 
-
-
+    private void SendTask() {
+        Dialog dialog = new Dialog(this);
+        dialog.setTitle("Type your task:");
+        dialog.setContentView(R.layout.task_layout);
+        dialog.show();
+    }
 
     private void IntializeControllers()
     {
@@ -110,20 +133,19 @@ public class ChatActivity extends AppCompatActivity {
         View actionBarView = layoutInflater.inflate(R.layout.custom_chat_bar, null);
         actionBar.setCustomView(actionBarView);
 
-        userName = (TextView) findViewById(R.id.custom_profile_name);
-        userLastSeen = (TextView) findViewById(R.id.custom_user_last_seen);
-        userImage = (CircleImageView) findViewById(R.id.custom_profile_image);
+        userName = findViewById(R.id.custom_profile_name);
+        userLastSeen = findViewById(R.id.custom_user_last_seen);
+        userImage = findViewById(R.id.custom_profile_image);
 
-        SendMessageButton = (ImageButton) findViewById(R.id.send_message_btn);
-        SendFilesButton = (ImageButton) findViewById(R.id.send_files_btn);
-        MessageInputText = (EditText) findViewById(R.id.input_message);
+        SendMessageButton = findViewById(R.id.send_message_btn);
+        SendTaskButton = findViewById(R.id.send_task_btn);
+        MessageInputText = findViewById(R.id.input_message);
 
         messageAdapter = new MessageAdapter(messagesList);
-        userMessagesList = (RecyclerView) findViewById(R.id.private_messages_list_of_users);
+        userMessagesList = findViewById(R.id.private_messages_list_of_users);
         linearLayoutManager = new LinearLayoutManager(this);
         userMessagesList.setLayoutManager(linearLayoutManager);
         userMessagesList.setAdapter(messageAdapter);
-
 
         Calendar calendar = Calendar.getInstance();
 
@@ -133,8 +155,6 @@ public class ChatActivity extends AppCompatActivity {
         SimpleDateFormat currentTime = new SimpleDateFormat("hh:mm a");
         saveCurrentTime = currentTime.format(calendar.getTime());
     }
-
-
 
     private void DisplayLastSeen()
     {
@@ -185,9 +205,7 @@ public class ChatActivity extends AppCompatActivity {
                         Messages messages = dataSnapshot.getValue(Messages.class);
 
                         messagesList.add(messages);
-
                         messageAdapter.notifyDataSetChanged();
-
                         userMessagesList.smoothScrollToPosition(userMessagesList.getAdapter().getItemCount());
                     }
 
@@ -214,14 +232,13 @@ public class ChatActivity extends AppCompatActivity {
     }
 
 
-
     private void SendMessage()
     {
         String messageText = MessageInputText.getText().toString();
 
         if (TextUtils.isEmpty(messageText))
         {
-            Toast.makeText(this, "first write your message...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "task empty...", Toast.LENGTH_SHORT).show();
         }
         else
         {
@@ -252,7 +269,7 @@ public class ChatActivity extends AppCompatActivity {
                 {
                     if (task.isSuccessful())
                     {
-                        Toast.makeText(ChatActivity.this, "Message Sent Successfully...", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ChatActivity.this, "Task Sent Successfully...", Toast.LENGTH_SHORT).show();
                     }
                     else
                     {
