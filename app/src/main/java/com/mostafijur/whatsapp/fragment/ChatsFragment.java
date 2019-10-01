@@ -60,12 +60,13 @@ public class ChatsFragment extends Fragment {
         UsersRef = FirebaseDatabase.getInstance().getReference().child("Users");
 
 
-        chatsList = PrivateChatsView.findViewById(R.id.chats_list);
+        chatsList = (RecyclerView) PrivateChatsView.findViewById(R.id.chats_list);
         chatsList.setLayoutManager(new LinearLayoutManager(getContext()));
 
 
         return PrivateChatsView;
     }
+
 
     @Override
     public void onStart()

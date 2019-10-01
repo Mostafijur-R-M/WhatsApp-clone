@@ -3,22 +3,45 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:padding="20dp">
+    android:layout_height="match_parent"
+    android:padding="20dp"
+    android:background="@drawable/inputs">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/task_recyler_id"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        />
     <EditText
         android:id="@+id/task_name_et_id"
         android:layout_width="match_parent"
-        android:layout_height="150dp"
+        android:layout_height="wrap_content"
         android:background="@drawable/inputs"
+        android:layout_below="@+id/task_recyler_id"
         android:padding="10dp"
+        android:layout_marginTop="20dp"
         android:hint="type task..."
         />
+
     <Button
+        android:id="@+id/add_new_task_btn_id"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/buttons"
+        android:text="+ Add new task +"
+        android:layout_below="@+id/task_name_et_id"
+        android:textColor="@color/colorWhite"
+        android:layout_marginTop="10dp"
+        android:textAllCaps="false"
+        android:gravity="center"/>
+
+    <Button
+        android:id="@+id/dialog_send_task_btn_id"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/buttons"
         android:text="Send Task"
-        android:layout_below="@+id/task_name_et_id"
+        android:layout_below="@+id/add_new_task_btn_id"
         android:textColor="@color/colorWhite"
         android:layout_marginTop="50dp"/>
 

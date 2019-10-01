@@ -4,17 +4,23 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Message;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Adapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -31,7 +37,9 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.mostafijur.whatsapp.R;
 import com.mostafijur.whatsapp.adapter.MessageAdapter;
+import com.mostafijur.whatsapp.adapter.TasksAdapter;
 import com.mostafijur.whatsapp.model.Messages;
+import com.mostafijur.whatsapp.model.Tasks;
 import com.squareup.picasso.Picasso;
 
 import java.text.SimpleDateFormat;
@@ -61,7 +69,7 @@ public class ChatActivity extends AppCompatActivity {
     private LinearLayoutManager linearLayoutManager;
     private MessageAdapter messageAdapter;
     private RecyclerView userMessagesList;
-
+    final List<Tasks> tasksList = new ArrayList<>();
 
     private String saveCurrentTime, saveCurrentDate;
     @Override
@@ -84,8 +92,6 @@ public class ChatActivity extends AppCompatActivity {
 
         userName.setText(messageReceiverName);
         Picasso.get().load(messageReceiverImage).placeholder(R.drawable.profile_image).into(userImage);
-
-
         SendMessageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view)
@@ -93,36 +99,111 @@ public class ChatActivity extends AppCompatActivity {
                 SendMessage();
             }
         });
+        DisplayLastSeen();
         SendTaskButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                SendTask();
+                openDialogeBox();
             }
         });
-        MessageInputText.setOnKeyListener(new View.OnKeyListener() {
+        /*addNewTaskBTN.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
-                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
-                (keyCode == KeyEvent.KEYCODE_ENTER)){
-                    Toast.makeText(ChatActivity.this, ""+MessageInputText.getText(), Toast.LENGTH_SHORT).show();
-                    SendMessage();
-                }
-                return false;
+            public void onClick(View v) {
+                showTaskList();
             }
-        });
-        DisplayLastSeen();
+        });*/
     }
 
-    private void SendTask() {
+    private void showTaskList() {
+
+    }
+
+    private void openDialogeBox() {
+
         Dialog dialog = new Dialog(this);
-        dialog.setTitle("Type your task:");
         dialog.setContentView(R.layout.task_layout);
+        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        final RecyclerView taskListRecyler = dialog.findViewById(R.id.task_recyler_id);
+
+//setAdapter
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(ChatActivity.this, LinearLayoutManager.VERTICAL, false);
+        final TasksAdapter tasksAdapter = new TasksAdapter(ChatActivity.this, tasksList);
+        taskListRecyler.setLayoutManager(layoutManager);
+        taskListRecyler.setAdapter(tasksAdapter);
+        tasksAdapter.notifyDataSetChanged();
+
+        final EditText taskName = dialog.findViewById(R.id.task_name_et_id);
+        Button addNewTask = dialog.findViewById(R.id.add_new_task_btn_id);
+        Button sendTask = dialog.findViewById(R.id.dialog_send_task_btn_id);
+        addNewTask.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String task = taskName.getText().toString();
+                if (TextUtils.isEmpty(task)){
+
+                }else {
+                    tasksList.add(new Tasks(task, "9596+", "pen"));
+                    tasksAdapter.notifyDataSetChanged();
+
+                }
+
+            }
+        });
+        sendTask.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                    sendTaskToReceiver();
+
+            }
+        });
         dialog.show();
     }
 
+    private void sendTaskToReceiver() {
+        int n = tasksList.size();
+        for (int i = 0; i < n; i++){
+            String taskId = tasksList.get(i).getTaskID();
+            String taskName = tasksList.get(i).getTaskName();
+            String taskStatus = tasksList.get(i).getStatus();
+            Log.e("taskName", taskName);
+            Log.e("taskName", taskId);
+            Log.e("taskName", taskStatus);
+
+            String messageSenderRef = "Tasks/" + messageSenderID +"/" + messageReceiverID;
+            String messageReceiverRef = "Tasks/" + messageReceiverID + "/" + messageSenderID;
+
+            DatabaseReference userTaskKeyRef = RootRef.child("Tasks")
+                    .child(messageSenderID).child(messageReceiverID).push();
+            String taskPushId = userTaskKeyRef.getKey();
+
+            Map taskTextBody = new HashMap();
+            taskTextBody.put("taskId", taskId);
+            taskTextBody.put("taskName", taskName);
+            taskTextBody.put("taskStatus", taskStatus);
+
+            Map taskTextDetails = new HashMap();
+            taskTextDetails.put(messageSenderRef + "/" + taskPushId, taskTextBody);
+            taskTextDetails.put(messageReceiverRef + "/" + taskPushId, taskTextBody);
+
+            RootRef.updateChildren(taskTextDetails).addOnCompleteListener(new OnCompleteListener() {
+                @Override
+                public void onComplete(@NonNull Task task) {
+                    if (task.isSuccessful()){
+                        Toast.makeText(ChatActivity.this, "Task sent success", Toast.LENGTH_SHORT).show();
+                    }else {
+
+                    }
+                }
+            });
+        }
+
+    }
+
+
     private void IntializeControllers()
     {
-        ChatToolBar = findViewById(R.id.chat_toolbar);
+        ChatToolBar = (Toolbar) findViewById(R.id.chat_toolbar);
         setSupportActionBar(ChatToolBar);
 
         ActionBar actionBar = getSupportActionBar();
@@ -133,19 +214,23 @@ public class ChatActivity extends AppCompatActivity {
         View actionBarView = layoutInflater.inflate(R.layout.custom_chat_bar, null);
         actionBar.setCustomView(actionBarView);
 
-        userName = findViewById(R.id.custom_profile_name);
-        userLastSeen = findViewById(R.id.custom_user_last_seen);
-        userImage = findViewById(R.id.custom_profile_image);
+        userName = (TextView) findViewById(R.id.custom_profile_name);
+        userLastSeen = (TextView) findViewById(R.id.custom_user_last_seen);
+        userImage = (CircleImageView) findViewById(R.id.custom_profile_image);
 
-        SendMessageButton = findViewById(R.id.send_message_btn);
-        SendTaskButton = findViewById(R.id.send_task_btn);
-        MessageInputText = findViewById(R.id.input_message);
+        SendMessageButton = (ImageButton) findViewById(R.id.send_message_btn);
+        //SendFilesButton = (ImageButton) findViewById(R.id.send_files_btn);
+        MessageInputText = (EditText) findViewById(R.id.input_message);
+        SendTaskButton  = findViewById(R.id.send_task_btn);
+
+
 
         messageAdapter = new MessageAdapter(messagesList);
-        userMessagesList = findViewById(R.id.private_messages_list_of_users);
+        userMessagesList = (RecyclerView) findViewById(R.id.private_messages_list_of_users);
         linearLayoutManager = new LinearLayoutManager(this);
         userMessagesList.setLayoutManager(linearLayoutManager);
         userMessagesList.setAdapter(messageAdapter);
+
 
         Calendar calendar = Calendar.getInstance();
 
@@ -155,6 +240,8 @@ public class ChatActivity extends AppCompatActivity {
         SimpleDateFormat currentTime = new SimpleDateFormat("hh:mm a");
         saveCurrentTime = currentTime.format(calendar.getTime());
     }
+
+
 
     private void DisplayLastSeen()
     {
@@ -205,7 +292,9 @@ public class ChatActivity extends AppCompatActivity {
                         Messages messages = dataSnapshot.getValue(Messages.class);
 
                         messagesList.add(messages);
+
                         messageAdapter.notifyDataSetChanged();
+
                         userMessagesList.smoothScrollToPosition(userMessagesList.getAdapter().getItemCount());
                     }
 
@@ -232,13 +321,14 @@ public class ChatActivity extends AppCompatActivity {
     }
 
 
+
     private void SendMessage()
     {
         String messageText = MessageInputText.getText().toString();
 
         if (TextUtils.isEmpty(messageText))
         {
-            Toast.makeText(this, "task empty...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "first write your message...", Toast.LENGTH_SHORT).show();
         }
         else
         {
@@ -260,6 +350,7 @@ public class ChatActivity extends AppCompatActivity {
             messageTextBody.put("date", saveCurrentDate);
 
             Map messageBodyDetails = new HashMap();
+
             messageBodyDetails.put(messageSenderRef + "/" + messagePushID, messageTextBody);
             messageBodyDetails.put( messageReceiverRef + "/" + messagePushID, messageTextBody);
 
@@ -269,7 +360,7 @@ public class ChatActivity extends AppCompatActivity {
                 {
                     if (task.isSuccessful())
                     {
-                        Toast.makeText(ChatActivity.this, "Task Sent Successfully...", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ChatActivity.this, "Message Sent Successfully...", Toast.LENGTH_SHORT).show();
                     }
                     else
                     {

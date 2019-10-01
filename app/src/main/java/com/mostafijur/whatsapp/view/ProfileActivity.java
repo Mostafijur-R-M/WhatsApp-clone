@@ -45,10 +45,8 @@ public class ProfileActivity extends AppCompatActivity {
         ContactsRef = FirebaseDatabase.getInstance().getReference().child("Contacts");
         NotificationRef = FirebaseDatabase.getInstance().getReference().child("Notifications");
 
-
         receiverUserID = getIntent().getExtras().get("visit_user_id").toString();
         senderUserID = mAuth.getCurrentUser().getUid();
-
 
         userProfileImage = (CircleImageView) findViewById(R.id.visit_profile_image);
         userProfileName = (TextView) findViewById(R.id.visit_user_name);
@@ -56,7 +54,6 @@ public class ProfileActivity extends AppCompatActivity {
         SendMessageRequestButton = (Button) findViewById(R.id.send_message_request_button);
         DeclineMessageRequestButton = (Button) findViewById(R.id.decline_message_request_button);
         Current_State = "new";
-
 
         RetrieveUserInfo();
     }
