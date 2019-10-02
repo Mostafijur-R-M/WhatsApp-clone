@@ -37,6 +37,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.mostafijur.whatsapp.R;
 import com.mostafijur.whatsapp.adapter.MessageAdapter;
+import com.mostafijur.whatsapp.adapter.TaskListAdapter;
 import com.mostafijur.whatsapp.adapter.TasksAdapter;
 import com.mostafijur.whatsapp.model.Messages;
 import com.mostafijur.whatsapp.model.Tasks;
@@ -62,12 +63,14 @@ public class ChatActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private DatabaseReference RootRef;
 
-    private ImageButton SendMessageButton, SendTaskButton;
+    //private ImageButton SendMessageButton, SendTaskButton;
+    private ImageButton SendTaskButton;
     private EditText MessageInputText;
 
-    private final List<Messages> messagesList = new ArrayList<>();
+    //private final List<Messages> messagesList = new ArrayList<>();
     private LinearLayoutManager linearLayoutManager;
-    private MessageAdapter messageAdapter;
+    private TaskListAdapter taskListAdapter;
+    //private MessageAdapter messageAdapter;
     private RecyclerView userMessagesList;
     final List<Tasks> tasksList = new ArrayList<>();
 
@@ -92,13 +95,13 @@ public class ChatActivity extends AppCompatActivity {
 
         userName.setText(messageReceiverName);
         Picasso.get().load(messageReceiverImage).placeholder(R.drawable.profile_image).into(userImage);
-        SendMessageButton.setOnClickListener(new View.OnClickListener() {
+        /*SendMessageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view)
             {
                 SendMessage();
             }
-        });
+        });*/
         DisplayLastSeen();
         SendTaskButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -142,9 +145,9 @@ public class ChatActivity extends AppCompatActivity {
                 if (TextUtils.isEmpty(task)){
 
                 }else {
-                    tasksList.add(new Tasks(task, "9596+", "pen"));
+                    String taskID = saveCurrentTime + saveCurrentDate;
+                    tasksList.add(new Tasks(task, taskID, "pending", "text", saveCurrentTime, saveCurrentDate, ""));
                     tasksAdapter.notifyDataSetChanged();
-
                 }
 
             }
@@ -166,9 +169,6 @@ public class ChatActivity extends AppCompatActivity {
             String taskId = tasksList.get(i).getTaskID();
             String taskName = tasksList.get(i).getTaskName();
             String taskStatus = tasksList.get(i).getStatus();
-            Log.e("taskName", taskName);
-            Log.e("taskName", taskId);
-            Log.e("taskName", taskStatus);
 
             String messageSenderRef = "Tasks/" + messageSenderID +"/" + messageReceiverID;
             String messageReceiverRef = "Tasks/" + messageReceiverID + "/" + messageSenderID;
@@ -180,11 +180,14 @@ public class ChatActivity extends AppCompatActivity {
             Map taskTextBody = new HashMap();
             taskTextBody.put("taskId", taskId);
             taskTextBody.put("taskName", taskName);
+            taskTextBody.put("text", "text");
             taskTextBody.put("taskStatus", taskStatus);
+            taskTextBody.put("time", saveCurrentTime);
+            taskTextBody.put("date", saveCurrentDate);
 
             Map taskTextDetails = new HashMap();
-            taskTextDetails.put(messageSenderRef + "/" + taskPushId, taskTextBody);
-            taskTextDetails.put(messageReceiverRef + "/" + taskPushId, taskTextBody);
+            taskTextDetails.put(messageSenderRef + "/" +taskId + "/" +taskPushId, taskTextBody);
+            taskTextDetails.put(messageReceiverRef + "/" +taskId + "/"  +taskPushId, taskTextBody);
 
             RootRef.updateChildren(taskTextDetails).addOnCompleteListener(new OnCompleteListener() {
                 @Override
@@ -218,19 +221,19 @@ public class ChatActivity extends AppCompatActivity {
         userLastSeen = (TextView) findViewById(R.id.custom_user_last_seen);
         userImage = (CircleImageView) findViewById(R.id.custom_profile_image);
 
-        SendMessageButton = (ImageButton) findViewById(R.id.send_message_btn);
+        //SendMessageButton = (ImageButton) findViewById(R.id.send_message_btn);
         //SendFilesButton = (ImageButton) findViewById(R.id.send_files_btn);
-        MessageInputText = (EditText) findViewById(R.id.input_message);
+        //MessageInputText = (EditText) findViewById(R.id.input_message);
         SendTaskButton  = findViewById(R.id.send_task_btn);
 
 
 
-        messageAdapter = new MessageAdapter(messagesList);
+        //messageAdapter = new MessageAdapter(messagesList);
+        taskListAdapter = new TaskListAdapter(this, tasksList);
         userMessagesList = (RecyclerView) findViewById(R.id.private_messages_list_of_users);
         linearLayoutManager = new LinearLayoutManager(this);
         userMessagesList.setLayoutManager(linearLayoutManager);
-        userMessagesList.setAdapter(messageAdapter);
-
+        userMessagesList.setAdapter(taskListAdapter);
 
         Calendar calendar = Calendar.getInstance();
 
@@ -289,11 +292,12 @@ public class ChatActivity extends AppCompatActivity {
                     @Override
                     public void onChildAdded(DataSnapshot dataSnapshot, String s)
                     {
-                        Messages messages = dataSnapshot.getValue(Messages.class);
+                        //Messages messages = dataSnapshot.getValue(Messages.class);
+                        Tasks tasks = dataSnapshot.getValue(Tasks.class);
 
-                        messagesList.add(messages);
+                        tasksList.add(tasks);
 
-                        messageAdapter.notifyDataSetChanged();
+                        taskListAdapter.notifyDataSetChanged();
 
                         userMessagesList.smoothScrollToPosition(userMessagesList.getAdapter().getItemCount());
                     }

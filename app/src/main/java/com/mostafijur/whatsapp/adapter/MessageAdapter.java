@@ -32,13 +32,10 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
     private FirebaseAuth mAuth;
     private DatabaseReference usersRef;
 
-
     public MessageAdapter (List<Messages> userMessagesList)
     {
         this.userMessagesList = userMessagesList;
     }
-
-
 
     public class MessageViewHolder extends RecyclerView.ViewHolder
     {
@@ -47,7 +44,6 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         public ImageView messageSenderPicture, messageReceiverPicture;
         public CheckBox receiverCB;
         public Button senderStatus;
-
 
         public MessageViewHolder(@NonNull View itemView)
         {
@@ -143,9 +139,6 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
             }
         }
     }
-
-
-
 
     @Override
     public int getItemCount()

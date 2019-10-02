@@ -111,7 +111,6 @@ public class ContactsFragment extends Fragment {
                                 holder.onlineIcon.setVisibility(View.INVISIBLE);
                             }
 
-
                             if (dataSnapshot.hasChild("image"))
                             {
                                 String userImage = dataSnapshot.child("image").getValue().toString();

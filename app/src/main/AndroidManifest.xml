@@ -16,11 +16,16 @@
         <activity android:name=".view.PhoneLoginActivity"></activity>
         <activity android:name=".view.MainActivity" />
         <activity android:name=".view.GroupChatActivity" />
-        <activity android:name=".view.SettingsActivity" />
+        <activity android:name=".view.SettingsActivity"
+            android:parentActivityName=".view.MainActivity"/>
         <activity android:name=".view.RegisterActivity" />
         <activity android:name=".view.ProfileActivity" />
-        <activity android:name=".view.FindFriendsActivity" />
-        <activity android:name=".view.ChatActivity" />
+        <activity android:name=".view.FindFriendsActivity"
+            android:parentActivityName=".view.MainActivity"/>
+        <activity android:name=".view.ChatActivity"
+            android:parentActivityName=".view.MainActivity">
+
+        </activity>
         <activity android:name=".view.LoginActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
