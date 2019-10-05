@@ -2,15 +2,14 @@ package com.mostafijur.whatsapp.adapter;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -48,6 +47,9 @@ public class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.MyView
 
         String taskSenderId = mAuth.getCurrentUser().getUid();
         Tasks tasks = tasksList.get(position);
+        
+        holder.senderTaskText.setText(tasksList.get(position).getTaskName());
+        Log.e("taskName: ", tasksList.get(position).getTaskName());
 
         String fromTaskId = tasks.getFrom();
         String fromTaskType = tasks.getType();
@@ -75,6 +77,7 @@ public class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.MyView
                 holder.senderTaskText.setVisibility(View.VISIBLE);
                 holder.senderTaskText.setTextColor(Color.BLACK);
                 holder.senderTaskText.setText(tasks.getTaskName());
+
             }else {
                 holder.receiverTasktext.setVisibility(View.VISIBLE);
                 holder.receiverCB.setVisibility(View.VISIBLE);

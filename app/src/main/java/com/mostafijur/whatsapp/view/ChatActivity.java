@@ -5,6 +5,7 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -19,6 +20,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Adapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -26,6 +28,8 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -39,6 +43,7 @@ import com.mostafijur.whatsapp.R;
 import com.mostafijur.whatsapp.adapter.MessageAdapter;
 import com.mostafijur.whatsapp.adapter.TaskListAdapter;
 import com.mostafijur.whatsapp.adapter.TasksAdapter;
+import com.mostafijur.whatsapp.adapter.TasksViewHolder;
 import com.mostafijur.whatsapp.model.Messages;
 import com.mostafijur.whatsapp.model.Tasks;
 import com.squareup.picasso.Picasso;
@@ -54,14 +59,14 @@ import de.hdodenhof.circleimageview.CircleImageView;
 
 public class ChatActivity extends AppCompatActivity {
 
-    private String messageReceiverID, messageReceiverName, messageReceiverImage, messageSenderID;
+    private String messageReceiverID, messageReceiverName, messageReceiverImage, messageSenderID, taskID;
 
     private TextView userName, userLastSeen;
     private CircleImageView userImage;
 
     private androidx.appcompat.widget.Toolbar ChatToolBar;
     private FirebaseAuth mAuth;
-    private DatabaseReference RootRef;
+    private DatabaseReference RootRef, taskRef;
 
     //private ImageButton SendMessageButton, SendTaskButton;
     private ImageButton SendTaskButton;
@@ -73,8 +78,12 @@ public class ChatActivity extends AppCompatActivity {
     //private MessageAdapter messageAdapter;
     private RecyclerView userMessagesList;
     final List<Tasks> tasksList = new ArrayList<>();
-
+    RecyclerView.LayoutManager layoutManager;
     private String saveCurrentTime, saveCurrentDate;
+    Dialog dialog;
+    private TasksAdapter tasksAdapter;
+    private EditText taskName;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,14 +93,11 @@ public class ChatActivity extends AppCompatActivity {
         messageSenderID = mAuth.getCurrentUser().getUid();
         RootRef = FirebaseDatabase.getInstance().getReference();
 
-
         messageReceiverID = getIntent().getExtras().get("visit_user_id").toString();
         messageReceiverName = getIntent().getExtras().get("visit_user_name").toString();
         messageReceiverImage = getIntent().getExtras().get("visit_image").toString();
 
-
         IntializeControllers();
-
 
         userName.setText(messageReceiverName);
         Picasso.get().load(messageReceiverImage).placeholder(R.drawable.profile_image).into(userImage);
@@ -115,6 +121,12 @@ public class ChatActivity extends AppCompatActivity {
                 showTaskList();
             }
         });*/
+        userMessagesList = findViewById(R.id.private_messages_list_of_users);
+        userMessagesList.setHasFixedSize(true);
+        layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+        userMessagesList.setLayoutManager(layoutManager);
+        taskID = saveCurrentTime + saveCurrentDate;
+        taskRef = FirebaseDatabase.getInstance().getReference().child("Tasks").child(messageSenderID).child(messageReceiverID).child(taskID);
     }
 
     private void showTaskList() {
@@ -123,44 +135,64 @@ public class ChatActivity extends AppCompatActivity {
 
     private void openDialogeBox() {
 
-        Dialog dialog = new Dialog(this);
+        dialog = new Dialog(this);
         dialog.setContentView(R.layout.task_layout);
         dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         final RecyclerView taskListRecyler = dialog.findViewById(R.id.task_recyler_id);
 
 //setAdapter
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(ChatActivity.this, LinearLayoutManager.VERTICAL, false);
-        final TasksAdapter tasksAdapter = new TasksAdapter(ChatActivity.this, tasksList);
+        tasksAdapter = new TasksAdapter(ChatActivity.this, tasksList);
         taskListRecyler.setLayoutManager(layoutManager);
         taskListRecyler.setAdapter(tasksAdapter);
         tasksAdapter.notifyDataSetChanged();
 
-        final EditText taskName = dialog.findViewById(R.id.task_name_et_id);
+        taskName = dialog.findViewById(R.id.task_name_et_id);
         Button addNewTask = dialog.findViewById(R.id.add_new_task_btn_id);
         Button sendTask = dialog.findViewById(R.id.dialog_send_task_btn_id);
         addNewTask.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String task = taskName.getText().toString();
-                if (TextUtils.isEmpty(task)){
-
-                }else {
-                    String taskID = saveCurrentTime + saveCurrentDate;
-                    tasksList.add(new Tasks(task, taskID, "pending", "text", saveCurrentTime, saveCurrentDate, ""));
-                    tasksAdapter.notifyDataSetChanged();
+                addTaskList();
+            }
+        });
+        taskName.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                if (event.getAction() == KeyEvent.ACTION_DOWN)
+                {
+                    switch (keyCode)
+                    {
+                        case KeyEvent.KEYCODE_DPAD_CENTER:
+                        case KeyEvent.KEYCODE_ENTER:
+                            addTaskList();
+                            return true;
+                        default:
+                            break;
+                    }
                 }
-
+                return false;
             }
         });
         sendTask.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
                     sendTaskToReceiver();
 
             }
         });
         dialog.show();
+    }
+
+    private void addTaskList() {
+        String task = taskName.getText().toString();
+        if (TextUtils.isEmpty(task)){
+
+        }else {
+            tasksList.add(new Tasks(task, taskID, "pending", "text", saveCurrentTime, saveCurrentDate, ""));
+            tasksAdapter.notifyDataSetChanged();
+            taskName.getText().clear();
+        }
     }
 
     private void sendTaskToReceiver() {
@@ -194,6 +226,7 @@ public class ChatActivity extends AppCompatActivity {
                 public void onComplete(@NonNull Task task) {
                     if (task.isSuccessful()){
                         Toast.makeText(ChatActivity.this, "Task sent success", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
                     }else {
 
                     }
@@ -202,7 +235,6 @@ public class ChatActivity extends AppCompatActivity {
         }
 
     }
-
 
     private void IntializeControllers()
     {
@@ -226,14 +258,14 @@ public class ChatActivity extends AppCompatActivity {
         //MessageInputText = (EditText) findViewById(R.id.input_message);
         SendTaskButton  = findViewById(R.id.send_task_btn);
 
-
-
         //messageAdapter = new MessageAdapter(messagesList);
         taskListAdapter = new TaskListAdapter(this, tasksList);
-        userMessagesList = (RecyclerView) findViewById(R.id.private_messages_list_of_users);
-        linearLayoutManager = new LinearLayoutManager(this);
+       // userMessagesList = findViewById(R.id.private_messages_list_of_users);
+
+
+        /*linearLayoutManager = new LinearLayoutManager(this);
         userMessagesList.setLayoutManager(linearLayoutManager);
-        userMessagesList.setAdapter(taskListAdapter);
+        userMessagesList.setAdapter(taskListAdapter);*/
 
         Calendar calendar = Calendar.getInstance();
 
@@ -243,8 +275,6 @@ public class ChatActivity extends AppCompatActivity {
         SimpleDateFormat currentTime = new SimpleDateFormat("hh:mm a");
         saveCurrentTime = currentTime.format(calendar.getTime());
     }
-
-
 
     private void DisplayLastSeen()
     {
@@ -281,25 +311,44 @@ public class ChatActivity extends AppCompatActivity {
                 });
     }
 
-
     @Override
     protected void onStart()
     {
         super.onStart();
 
-        RootRef.child("Messages").child(messageSenderID).child(messageReceiverID)
+        /*FirebaseRecyclerOptions<Tasks> options =
+                new FirebaseRecyclerOptions.Builder<Tasks>()
+                .setQuery(taskRef, Tasks.class)
+                .build();
+        FirebaseRecyclerAdapter<Tasks, TasksViewHolder> adapter =
+                new FirebaseRecyclerAdapter<Tasks, TasksViewHolder>(options) {
+                    @Override
+                    protected void onBindViewHolder(@NonNull TasksViewHolder tasksViewHolder, int i, @NonNull Tasks tasks) {
+
+                        tasksViewHolder.senderTaskName.setText(tasks.getTaskName());
+                    }
+
+                    @NonNull
+                    @Override
+                    public TasksViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.custom_task_layout, parent, false);
+                        return new TasksViewHolder(view);
+                    }
+                };
+        userMessagesList.setAdapter(adapter);
+        adapter.startListening();*/
+
+        RootRef.child("Tasks").child(messageSenderID).child(messageReceiverID).child(taskID)
                 .addChildEventListener(new ChildEventListener() {
                     @Override
                     public void onChildAdded(DataSnapshot dataSnapshot, String s)
                     {
                         //Messages messages = dataSnapshot.getValue(Messages.class);
                         Tasks tasks = dataSnapshot.getValue(Tasks.class);
-
                         tasksList.add(tasks);
-
                         taskListAdapter.notifyDataSetChanged();
-
-                        userMessagesList.smoothScrollToPosition(userMessagesList.getAdapter().getItemCount());
+                        //tasksList.clear();
+                        //userMessagesList.smoothScrollToPosition(userMessagesList.getAdapter().getItemCount());
                     }
 
                     @Override
@@ -323,8 +372,6 @@ public class ChatActivity extends AppCompatActivity {
                     }
                 });
     }
-
-
 
     private void SendMessage()
     {
