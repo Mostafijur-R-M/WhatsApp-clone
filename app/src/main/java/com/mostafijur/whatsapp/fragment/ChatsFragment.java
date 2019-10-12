@@ -9,23 +9,32 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.mostafijur.whatsapp.model.Conversations;
 import com.mostafijur.whatsapp.view.ChatActivity;
 import com.mostafijur.whatsapp.model.Contacts;
 import com.mostafijur.whatsapp.R;
 import com.squareup.picasso.Picasso;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -38,9 +47,9 @@ public class ChatsFragment extends Fragment {
     private View PrivateChatsView;
     private RecyclerView chatsList;
 
-    private DatabaseReference ChatsRef, UsersRef;
+    private DatabaseReference ChatsRef, UsersRef, RootRef, ConversationsRef;
     private FirebaseAuth mAuth;
-    private String currentUserID="";
+    private String currentUserID="", messageSenderID, messageReceiverID, usersIDs, conversationsID;
 
     public ChatsFragment() {
         // Required empty public constructor
@@ -56,11 +65,14 @@ public class ChatsFragment extends Fragment {
 
         mAuth = FirebaseAuth.getInstance();
         currentUserID = mAuth.getCurrentUser().getUid();
+        messageSenderID = mAuth.getCurrentUser().getUid();
+
         ChatsRef = FirebaseDatabase.getInstance().getReference().child("Contacts").child(currentUserID);
         UsersRef = FirebaseDatabase.getInstance().getReference().child("Users");
+        ConversationsRef = FirebaseDatabase.getInstance().getReference().child("Conversations");
+        RootRef = FirebaseDatabase.getInstance().getReference();
 
-
-        chatsList = (RecyclerView) PrivateChatsView.findViewById(R.id.chats_list);
+        chatsList = PrivateChatsView.findViewById(R.id.chats_list);
         chatsList.setLayoutManager(new LinearLayoutManager(getContext()));
 
 
@@ -85,7 +97,7 @@ public class ChatsFragment extends Fragment {
                     @Override
                     protected void onBindViewHolder(@NonNull final ChatsViewHolder holder, int position, @NonNull Contacts model)
                     {
-                        final String usersIDs = getRef(position).getKey();
+                        usersIDs = getRef(position).getKey();
                         final String[] retImage = {"default_image"};
 
                         UsersRef.child(usersIDs).addValueEventListener(new ValueEventListener() {
@@ -101,6 +113,7 @@ public class ChatsFragment extends Fragment {
                                     }
 
                                     final String retName = dataSnapshot.child("name").getValue().toString();
+                                    messageReceiverID = dataSnapshot.child("uid").getValue().toString();
                                     final String retStatus = dataSnapshot.child("status").getValue().toString();
 
                                     holder.userName.setText(retName);
@@ -130,11 +143,16 @@ public class ChatsFragment extends Fragment {
                                         @Override
                                         public void onClick(View view)
                                         {
+
+                                            createConversations();
                                             Intent chatIntent = new Intent(getContext(), ChatActivity.class);
-                                            chatIntent.putExtra("visit_user_id", usersIDs);
+                                            chatIntent.putExtra("visit_user_id", messageReceiverID);
                                             chatIntent.putExtra("visit_user_name", retName);
                                             chatIntent.putExtra("visit_image", retImage[0]);
+                                            chatIntent.putExtra("conversations_id", conversationsID);
                                             startActivity(chatIntent);
+
+                                            Log.e("1234", "conv ID: "+conversationsID);
                                         }
                                     });
                                 }
@@ -160,7 +178,92 @@ public class ChatsFragment extends Fragment {
         adapter.startListening();
     }
 
+    private void createConversations() {
 
+
+        RootRef.child("Conversations").addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                String key = dataSnapshot.getKey();
+                String senderID = dataSnapshot.child("SenderID").getValue(String.class);
+                String receiverID = dataSnapshot.child("ReceiverID").getValue(String.class);
+
+                if (senderID.equals(messageSenderID) && receiverID.equals(messageReceiverID)){
+                    Log.e("123456", key);
+
+
+                }else {
+                    DatabaseReference userTaskKeyRef = RootRef.child("Conversations").push();
+
+                    //String taskPushKey = userTaskKeyRef.getKey();
+                    conversationsID  = userTaskKeyRef.push().getKey();
+                    //conversationsID  = messageSenderID+messageReceiverID;
+
+                    String senderRef = "Conversations/" +conversationsID + "/SenderID";
+                    String receiverRef = "Conversations/" +conversationsID + "/ReceiverID";
+
+                    Map map = new HashMap();
+                    map.put(senderRef, messageSenderID);
+                    map.put(receiverRef, messageReceiverID);
+
+                    RootRef.updateChildren(map).addOnCompleteListener(new OnCompleteListener() {
+                        @Override
+                        public void onComplete(@NonNull Task task) {
+
+                        }
+                    });
+                    Log.e("123456", "no data here");
+                }
+
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+        /**/
+
+        /*ConversationsRef.child(conversationsID).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()){
+                    //Conversations conversations = dataSnapshot.getValue(Conversations.class);
+                    String senderID = dataSnapshot.child("SenderID").getValue().toString();
+                    String receiverID = dataSnapshot.child("ReceiverID").getValue().toString();
+                    //String receiverID = conversations.getReceiverID();
+
+                    Log.e("123456: ", "sender: "+ senderID);
+                    Log.e("123456: ", "receiver: "+ receiverID);
+                    *//*if (dataSnapshot.hasChild("SenderID")){
+                        Toast.makeText(getContext(), "Already Here", Toast.LENGTH_SHORT).show();
+                    }else {
+                        Toast.makeText(getContext(), "NEED CREATE", Toast.LENGTH_SHORT).show();
+                    }*//*
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });*/
+    }
 
 
     public static class  ChatsViewHolder extends RecyclerView.ViewHolder

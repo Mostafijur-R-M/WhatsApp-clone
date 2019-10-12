@@ -1,58 +1,17 @@
 package com.mostafijur.whatsapp.model;
 
 public class Tasks {
-    private String taskName, taskID, status, type, time, date, from;
+    private String date, taskId, taskName, taskStatus, text, time;
 
     public Tasks() {
     }
 
-    public Tasks(String taskName, String taskID, String status, String type, String time, String date, String from) {
-        this.taskName = taskName;
-        this.taskID = taskID;
-        this.status = status;
-        this.type = type;
-        this.time = time;
+    public Tasks(String date, String taskId, String taskName, String taskStatus, String text, String time) {
         this.date = date;
-        this.from = from;
-    }
-
-    public String getTaskName() {
-        return taskName;
-    }
-
-    public void setTaskName(String taskName) {
+        this.taskId = taskId;
         this.taskName = taskName;
-    }
-
-    public String getTaskID() {
-        return taskID;
-    }
-
-    public void setTaskID(String taskID) {
-        this.taskID = taskID;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public String getTime() {
-        return time;
-    }
-
-    public void setTime(String time) {
+        this.taskStatus = taskStatus;
+        this.text = text;
         this.time = time;
     }
 
@@ -64,11 +23,43 @@ public class Tasks {
         this.date = date;
     }
 
-    public String getFrom() {
-        return from;
+    public String getTaskId() {
+        return taskId;
     }
 
-    public void setFrom(String from) {
-        this.from = from;
+    public void setTaskId(String taskId) {
+        this.taskId = taskId;
+    }
+
+    public String getTaskName() {
+        return taskName;
+    }
+
+    public void setTaskName(String taskName) {
+        this.taskName = taskName;
+    }
+
+    public String getTaskStatus() {
+        return taskStatus;
+    }
+
+    public void setTaskStatus(String taskStatus) {
+        this.taskStatus = taskStatus;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public String getTime() {
+        return time;
+    }
+
+    public void setTime(String time) {
+        this.time = time;
     }
 }

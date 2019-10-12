@@ -2,10 +2,8 @@ package com.mostafijur.whatsapp.view;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -14,14 +12,12 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
-import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Adapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -40,12 +36,10 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.mostafijur.whatsapp.R;
-import com.mostafijur.whatsapp.adapter.MessageAdapter;
 import com.mostafijur.whatsapp.adapter.TaskListAdapter;
 import com.mostafijur.whatsapp.adapter.TasksAdapter;
-import com.mostafijur.whatsapp.adapter.TasksViewHolder;
-import com.mostafijur.whatsapp.model.Messages;
 import com.mostafijur.whatsapp.model.Tasks;
+import com.mostafijur.whatsapp.viewholder.TaskViewHolder;
 import com.squareup.picasso.Picasso;
 
 import java.text.SimpleDateFormat;
@@ -59,7 +53,7 @@ import de.hdodenhof.circleimageview.CircleImageView;
 
 public class ChatActivity extends AppCompatActivity {
 
-    private String messageReceiverID, messageReceiverName, messageReceiverImage, messageSenderID, taskID;
+    private String messageReceiverID, messageReceiverName, messageReceiverImage, messageSenderID, timeStampID, conversationsID;
 
     private TextView userName, userLastSeen;
     private CircleImageView userImage;
@@ -76,14 +70,16 @@ public class ChatActivity extends AppCompatActivity {
     private LinearLayoutManager linearLayoutManager;
     private TaskListAdapter taskListAdapter;
     //private MessageAdapter messageAdapter;
-    private RecyclerView userMessagesList;
+    private RecyclerView parentRV;
     final List<Tasks> tasksList = new ArrayList<>();
     RecyclerView.LayoutManager layoutManager;
     private String saveCurrentTime, saveCurrentDate;
     Dialog dialog;
     private TasksAdapter tasksAdapter;
     private EditText taskName;
-
+    private FirebaseRecyclerOptions<Tasks> options;
+    private FirebaseRecyclerAdapter<Tasks, TaskViewHolder> adapter;
+    private DatabaseReference databaseReference;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -97,6 +93,9 @@ public class ChatActivity extends AppCompatActivity {
         messageReceiverName = getIntent().getExtras().get("visit_user_name").toString();
         messageReceiverImage = getIntent().getExtras().get("visit_image").toString();
 
+        //conversationsID = getIntent().getExtras().get("conversations_id").toString();
+
+        Log.e("1234", "chat activity: "+conversationsID);
         IntializeControllers();
 
         userName.setText(messageReceiverName);
@@ -121,12 +120,35 @@ public class ChatActivity extends AppCompatActivity {
                 showTaskList();
             }
         });*/
-        userMessagesList = findViewById(R.id.private_messages_list_of_users);
-        userMessagesList.setHasFixedSize(true);
+        parentRV = findViewById(R.id.private_messages_list_of_users);
+        parentRV.setHasFixedSize(true);
         layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
-        userMessagesList.setLayoutManager(layoutManager);
-        taskID = saveCurrentTime + saveCurrentDate;
-        taskRef = FirebaseDatabase.getInstance().getReference().child("Tasks").child(messageSenderID).child(messageReceiverID).child(taskID);
+        parentRV.setLayoutManager(layoutManager);
+       // parentRV.setAdapter(adapter);
+        //taskID = saveCurrentTime + saveCurrentDate;
+       // taskRef = FirebaseDatabase.getInstance().getReference().child("Tasks").child(messageSenderID).child(messageReceiverID).child(taskID);
+        databaseReference = FirebaseDatabase.getInstance().getReference()
+                .child("Tasks");
+        options= new FirebaseRecyclerOptions.Builder<Tasks>()
+                .setQuery(taskRef, Tasks.class)
+                .build();
+        adapter = new FirebaseRecyclerAdapter<Tasks, TaskViewHolder>(options) {
+            @Override
+            protected void onBindViewHolder(@NonNull TaskViewHolder taskViewHolder, int i, @NonNull Tasks tasks) {
+                taskViewHolder.senderTaskTV.setText(tasks.getTaskName());
+                Log.e("taskName: ", tasks.getTaskName());
+            }
+
+            @NonNull
+            @Override
+            public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                View view = LayoutInflater.from(ChatActivity.this).inflate(R.layout.custom_task_layout, parent, false);
+                return new TaskViewHolder(view);
+            }
+        };
+
+        parentRV.setAdapter(adapter);
+
     }
 
     private void showTaskList() {
@@ -189,7 +211,8 @@ public class ChatActivity extends AppCompatActivity {
         if (TextUtils.isEmpty(task)){
 
         }else {
-            tasksList.add(new Tasks(task, taskID, "pending", "text", saveCurrentTime, saveCurrentDate, ""));
+           // tasksList.add(new Tasks(task, taskID, "pending", "text", saveCurrentTime, saveCurrentDate, ""));
+            tasksList.add(new Tasks(saveCurrentDate, timeStampID, task, "pending", "text", saveCurrentTime));
             tasksAdapter.notifyDataSetChanged();
             taskName.getText().clear();
         }
@@ -198,19 +221,29 @@ public class ChatActivity extends AppCompatActivity {
     private void sendTaskToReceiver() {
         int n = tasksList.size();
         for (int i = 0; i < n; i++){
-            String taskId = tasksList.get(i).getTaskID();
+            String taskId = tasksList.get(i).getTaskId();
             String taskName = tasksList.get(i).getTaskName();
-            String taskStatus = tasksList.get(i).getStatus();
+            String taskStatus = tasksList.get(i).getTaskStatus();
 
-            String messageSenderRef = "Tasks/" + messageSenderID +"/" + messageReceiverID;
-            String messageReceiverRef = "Tasks/" + messageReceiverID + "/" + messageSenderID;
-
-            DatabaseReference userTaskKeyRef = RootRef.child("Tasks")
+            /*DatabaseReference userTaskKeyRef = RootRef.child("Conversations")
                     .child(messageSenderID).child(messageReceiverID).push();
-            String taskPushId = userTaskKeyRef.getKey();
+
+            String taskPushId = userTaskKeyRef.getKey();*/
+
+           // conversationsID = userTaskKeyRef.push().getKey();;
+
+            long timeStamp = System.currentTimeMillis()/1000;
+            timeStampID = String.valueOf(timeStamp);
+
+            String messageSenderRef = "Conversations/" +conversationsID + "/Sender";
+            String messageSenderRef2 = "Conversations/" + conversationsID + "/Receiver";
+            String taskSenderRef = "Task/" + conversationsID;
+            //String messageReceiverRef = "Tasks/" + messageReceiverID + "/" + messageSenderID;
+
+
 
             Map taskTextBody = new HashMap();
-            taskTextBody.put("taskId", taskId);
+            taskTextBody.put("senderID", messageSenderID );
             taskTextBody.put("taskName", taskName);
             taskTextBody.put("text", "text");
             taskTextBody.put("taskStatus", taskStatus);
@@ -218,8 +251,10 @@ public class ChatActivity extends AppCompatActivity {
             taskTextBody.put("date", saveCurrentDate);
 
             Map taskTextDetails = new HashMap();
-            taskTextDetails.put(messageSenderRef + "/" +taskId + "/" +taskPushId, taskTextBody);
-            taskTextDetails.put(messageReceiverRef + "/" +taskId + "/"  +taskPushId, taskTextBody);
+            taskTextDetails.put(messageSenderRef, messageSenderID);
+            taskTextDetails.put(messageSenderRef2, messageReceiverID);
+           // taskTextDetails.put(taskSenderRef + "/" +timeStampID + "/" + taskPushId, taskTextBody);
+            //taskTextDetails.put(messageReceiverRef + "/" +taskId + "/"  +taskPushId, taskTextBody);
 
             RootRef.updateChildren(taskTextDetails).addOnCompleteListener(new OnCompleteListener() {
                 @Override
@@ -260,12 +295,12 @@ public class ChatActivity extends AppCompatActivity {
 
         //messageAdapter = new MessageAdapter(messagesList);
         taskListAdapter = new TaskListAdapter(this, tasksList);
-       // userMessagesList = findViewById(R.id.private_messages_list_of_users);
+       // parentRV = findViewById(R.id.private_messages_list_of_users);
 
 
         /*linearLayoutManager = new LinearLayoutManager(this);
-        userMessagesList.setLayoutManager(linearLayoutManager);
-        userMessagesList.setAdapter(taskListAdapter);*/
+        parentRV.setLayoutManager(linearLayoutManager);
+        parentRV.setAdapter(taskListAdapter);*/
 
         Calendar calendar = Calendar.getInstance();
 
@@ -311,32 +346,10 @@ public class ChatActivity extends AppCompatActivity {
                 });
     }
 
-    @Override
+    /*@Override
     protected void onStart()
     {
         super.onStart();
-
-        /*FirebaseRecyclerOptions<Tasks> options =
-                new FirebaseRecyclerOptions.Builder<Tasks>()
-                .setQuery(taskRef, Tasks.class)
-                .build();
-        FirebaseRecyclerAdapter<Tasks, TasksViewHolder> adapter =
-                new FirebaseRecyclerAdapter<Tasks, TasksViewHolder>(options) {
-                    @Override
-                    protected void onBindViewHolder(@NonNull TasksViewHolder tasksViewHolder, int i, @NonNull Tasks tasks) {
-
-                        tasksViewHolder.senderTaskName.setText(tasks.getTaskName());
-                    }
-
-                    @NonNull
-                    @Override
-                    public TasksViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.custom_task_layout, parent, false);
-                        return new TasksViewHolder(view);
-                    }
-                };
-        userMessagesList.setAdapter(adapter);
-        adapter.startListening();*/
 
         RootRef.child("Tasks").child(messageSenderID).child(messageReceiverID).child(taskID)
                 .addChildEventListener(new ChildEventListener() {
@@ -347,8 +360,9 @@ public class ChatActivity extends AppCompatActivity {
                         Tasks tasks = dataSnapshot.getValue(Tasks.class);
                         tasksList.add(tasks);
                         taskListAdapter.notifyDataSetChanged();
-                        //tasksList.clear();
-                        //userMessagesList.smoothScrollToPosition(userMessagesList.getAdapter().getItemCount());
+                        Log.e("taskList:", ""+tasks);
+                        tasksList.clear();
+                        parentRV.smoothScrollToPosition(parentRV.getAdapter().getItemCount());
                     }
 
                     @Override
@@ -371,7 +385,7 @@ public class ChatActivity extends AppCompatActivity {
 
                     }
                 });
-    }
+    }*/
 
     private void SendMessage()
     {

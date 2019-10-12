@@ -51,10 +51,10 @@ public class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.MyView
         holder.senderTaskText.setText(tasksList.get(position).getTaskName());
         Log.e("taskName: ", tasksList.get(position).getTaskName());
 
-        String fromTaskId = tasks.getFrom();
-        String fromTaskType = tasks.getType();
+        /*String fromTaskId = tasks.get();
+        String fromTaskType = tasks.getType();*/
 
-        userRef = FirebaseDatabase.getInstance().getReference().child("Users").child(fromTaskId);
+        //userRef = FirebaseDatabase.getInstance().getReference().child("Users").child(fromTaskId);
 
         /*userRef.addValueEventListener(new ValueEventListener() {
             @Override
@@ -68,7 +68,7 @@ public class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.MyView
             }
         });*/
 
-        holder.receiverTasktext.setVisibility(View.GONE);
+       /* holder.receiverTasktext.setVisibility(View.GONE);
         holder.senderTaskText.setVisibility(View.GONE);
         holder.receiverCB.setVisibility(View.GONE);
 
@@ -84,7 +84,7 @@ public class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.MyView
                 holder.receiverTasktext.setTextColor(Color.BLACK);
                 holder.receiverTasktext.setText(tasks.getTaskName());
             }
-        }
+        }*/
     }
 
     @Override
@@ -100,8 +100,8 @@ public class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.MyView
             super(itemView);
 
             senderTaskText = itemView.findViewById(R.id.sender_task_tv_id);
-            receiverTasktext = itemView.findViewById(R.id.receiver_task_tv_id);
-            receiverCB = itemView.findViewById(R.id.receiver_cb_id);
+            //receiverTasktext = itemView.findViewById(R.id.receiver_task_tv_id);
+            //receiverCB = itemView.findViewById(R.id.receiver_cb_id);
         }
     }
 }
