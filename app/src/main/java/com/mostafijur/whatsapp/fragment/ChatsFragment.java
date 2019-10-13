@@ -50,6 +50,9 @@ public class ChatsFragment extends Fragment {
     private DatabaseReference ChatsRef, UsersRef, RootRef, ConversationsRef;
     private FirebaseAuth mAuth;
     private String currentUserID="", messageSenderID, messageReceiverID, usersIDs, conversationsID;
+    private String key, retName;
+    private String[] retImage;
+    private Intent chatIntent;
 
     public ChatsFragment() {
         // Required empty public constructor
@@ -98,7 +101,7 @@ public class ChatsFragment extends Fragment {
                     protected void onBindViewHolder(@NonNull final ChatsViewHolder holder, int position, @NonNull Contacts model)
                     {
                         usersIDs = getRef(position).getKey();
-                        final String[] retImage = {"default_image"};
+                        retImage = new String[]{"default_image"};
 
                         UsersRef.child(usersIDs).addValueEventListener(new ValueEventListener() {
                             @Override
@@ -112,7 +115,7 @@ public class ChatsFragment extends Fragment {
                                         Picasso.get().load(retImage[0]).into(holder.profileImage);
                                     }
 
-                                    final String retName = dataSnapshot.child("name").getValue().toString();
+                                    retName = dataSnapshot.child("name").getValue().toString();
                                     messageReceiverID = dataSnapshot.child("uid").getValue().toString();
                                     final String retStatus = dataSnapshot.child("status").getValue().toString();
 
@@ -143,16 +146,7 @@ public class ChatsFragment extends Fragment {
                                         @Override
                                         public void onClick(View view)
                                         {
-
                                             createConversations();
-                                            Intent chatIntent = new Intent(getContext(), ChatActivity.class);
-                                            chatIntent.putExtra("visit_user_id", messageReceiverID);
-                                            chatIntent.putExtra("visit_user_name", retName);
-                                            chatIntent.putExtra("visit_image", retImage[0]);
-                                            chatIntent.putExtra("conversations_id", conversationsID);
-                                            startActivity(chatIntent);
-
-                                            Log.e("1234", "conv ID: "+conversationsID);
                                         }
                                     });
                                 }
@@ -180,8 +174,57 @@ public class ChatsFragment extends Fragment {
 
     private void createConversations() {
 
+        ConversationsRef.orderByChild("SenderID").equalTo(messageSenderID).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot datas : dataSnapshot.getChildren()){
+                    String senderID = datas.child("SenderID").getValue().toString();
+                    String receiverID = datas.child("ReceiverID").getValue().toString();
 
-        RootRef.child("Conversations").addChildEventListener(new ChildEventListener() {
+                    if (senderID.equals(messageSenderID) && receiverID.equals(messageReceiverID)){
+                        key = datas.getKey();
+                        break;
+                    }
+                }
+                if (key != null){
+
+                    chatIntent = new Intent(getContext(), ChatActivity.class);
+                    chatIntent.putExtra("visit_user_id", messageReceiverID);
+                    chatIntent.putExtra("visit_user_name", retName);
+                    chatIntent.putExtra("conversations_id", key);
+                    chatIntent.putExtra("visit_image", retImage[0]);
+                    startActivity(chatIntent);
+                    Log.e("123456", ""+key);
+                }else {
+                    Log.e("123456", "No Data Here");
+                    DatabaseReference userTaskKeyRef = RootRef.child("Conversations").push();
+
+                    //String taskPushKey = userTaskKeyRef.getKey();
+                    conversationsID  = userTaskKeyRef.push().getKey();
+                    //conversationsID  = messageSenderID+messageReceiverID;
+
+                    String senderRef = "Conversations/" +conversationsID + "/SenderID";
+                    String receiverRef = "Conversations/" +conversationsID + "/ReceiverID";
+
+                    Map map = new HashMap();
+                    map.put(senderRef, messageSenderID);
+                    map.put(receiverRef, messageReceiverID);
+
+                    RootRef.updateChildren(map).addOnCompleteListener(new OnCompleteListener() {
+                        @Override
+                        public void onComplete(@NonNull Task task) {
+
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+        /*RootRef.child("Conversations").addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                 String key = dataSnapshot.getKey();
@@ -236,7 +279,7 @@ public class ChatsFragment extends Fragment {
             public void onCancelled(DatabaseError databaseError) {
 
             }
-        });
+        });*/
         /**/
 
         /*ConversationsRef.child(conversationsID).addValueEventListener(new ValueEventListener() {
